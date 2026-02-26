@@ -13,6 +13,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EmailModule } from './email/email.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
+import { MetricsModule } from './metrics/metrics.module';
 import databaseConfig from './database/database.config';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { TestController } from './test/test.controller';
@@ -60,6 +61,7 @@ const appLogger = new Logger('TypeORM');
         limit: 100,
       },
     ]),
+    MetricsModule,
     SentimentModule,
     NewsModule,
     AuthModule,
