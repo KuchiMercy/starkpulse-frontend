@@ -19,10 +19,7 @@ use soroban_sdk::{
 
 /// Create a Stellar asset contract and return both a TokenClient and a
 /// StellarAssetClient (the latter is used to mint tokens in tests).
-fn create_token<'a>(
-    env: &Env,
-    admin: &Address,
-) -> (TokenClient<'a>, StellarAssetClient<'a>) {
+fn create_token<'a>(env: &Env, admin: &Address) -> (TokenClient<'a>, StellarAssetClient<'a>) {
     let addr = env.register_stellar_asset_contract_v2(admin.clone());
     (
         TokenClient::new(env, &addr.address()),
@@ -55,7 +52,7 @@ pub fn setup_vault<'a>(
 
 /// Mint `amount` tokens to `user` and deposit them into `project_id`.
 pub fn do_deposit(
-    env: &Env,
+    _env: &Env,
     client: &CrowdfundVaultContractClient,
     token_admin: &StellarAssetClient,
     user: &Address,

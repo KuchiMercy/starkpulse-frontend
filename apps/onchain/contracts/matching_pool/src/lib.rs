@@ -82,17 +82,33 @@ impl MatchingPoolContract {
             is_finalized: false,
             is_distributed: false,
         };
-        env.storage().persistent().set(&DataKey::Round(round_id), &round);
-        env.storage().persistent().set(&DataKey::RoundPool(round_id), &0i128);
-        env.storage().persistent().set(&DataKey::EligibleProjectCount(round_id), &0u32);
-        env.storage().persistent().set(&DataKey::MatchDistributed(round_id), &false);
         env.storage()
             .persistent()
-            .set(&DataKey::RoundStatus(round_id), &Symbol::new(&env, "ACTIVE"));
+            .set(&DataKey::Round(round_id), &round);
+        env.storage()
+            .persistent()
+            .set(&DataKey::RoundPool(round_id), &0i128);
+        env.storage()
+            .persistent()
+            .set(&DataKey::EligibleProjectCount(round_id), &0u32);
+        env.storage()
+            .persistent()
+            .set(&DataKey::MatchDistributed(round_id), &false);
+        env.storage().persistent().set(
+            &DataKey::RoundStatus(round_id),
+            &Symbol::new(&env, "ACTIVE"),
+        );
         env.storage()
             .instance()
             .set(&DataKey::NextRoundId, &(round_id + 1));
-        events::RoundCreatedEvent { admin, round_id, name, start_time, end_time }.publish(&env);
+        events::RoundCreatedEvent {
+            admin,
+            round_id,
+            name,
+            start_time,
+            end_time,
+        }
+        .publish(&env);
         Ok(round_id)
     }
 
@@ -119,10 +135,19 @@ impl MatchingPoolContract {
         TokenClient::new(&env, &round.token_address).transfer(&funder, &contract_addr, &amount);
         let pool_key = DataKey::RoundPool(round_id);
         let current: i128 = env.storage().persistent().get(&pool_key).unwrap_or(0);
-        env.storage().persistent().set(&pool_key, &(current + amount));
+        env.storage()
+            .persistent()
+            .set(&pool_key, &(current + amount));
         round.total_pool += amount;
-        env.storage().persistent().set(&DataKey::Round(round_id), &round);
-        events::PoolFundedEvent { funder, round_id, amount }.publish(&env);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Round(round_id), &round);
+        events::PoolFundedEvent {
+            funder,
+            round_id,
+            amount,
+        }
+        .publish(&env);
         Ok(())
     }
 
@@ -160,10 +185,15 @@ impl MatchingPoolContract {
         env.storage()
             .persistent()
             .set(&DataKey::ProjectContributions(round_id, project_id), &0i128);
-        env.storage()
-            .persistent()
-            .set(&DataKey::ProjectContributorCount(round_id, project_id), &0u32);
-        events::ProjectApprovedEvent { round_id, project_id }.publish(&env);
+        env.storage().persistent().set(
+            &DataKey::ProjectContributorCount(round_id, project_id),
+            &0u32,
+        );
+        events::ProjectApprovedEvent {
+            round_id,
+            project_id,
+        }
+        .publish(&env);
         Ok(())
     }
 
@@ -192,7 +222,11 @@ impl MatchingPoolContract {
             return Err(MatchingPoolError::ProjectNotEligible);
         }
         env.storage().persistent().set(&eligible_key, &false);
-        events::ProjectRemovedEvent { round_id, project_id }.publish(&env);
+        events::ProjectRemovedEvent {
+            round_id,
+            project_id,
+        }
+        .publish(&env);
         Ok(())
     }
 
@@ -238,12 +272,21 @@ impl MatchingPoolContract {
             );
             env.storage().persistent().set(&cnt_key, &(cnt + 1));
         }
-        env.storage().persistent().set(&contrib_key, &(prev + amount));
+        env.storage()
+            .persistent()
+            .set(&contrib_key, &(prev + amount));
         let total_key = DataKey::ProjectContributions(round_id, project_id);
         let total: i128 = env.storage().persistent().get(&total_key).unwrap_or(0);
-        env.storage().persistent().set(&total_key, &(total + amount));
-        events::ContributionRecordedEvent { round_id, project_id, contributor, amount }
-            .publish(&env);
+        env.storage()
+            .persistent()
+            .set(&total_key, &(total + amount));
+        events::ContributionRecordedEvent {
+            round_id,
+            project_id,
+            contributor,
+            amount,
+        }
+        .publish(&env);
         Ok(())
     }
 
@@ -265,10 +308,13 @@ impl MatchingPoolContract {
             return Err(MatchingPoolError::RoundStillOpen);
         }
         round.is_finalized = true;
-        env.storage().persistent().set(&DataKey::Round(round_id), &round);
         env.storage()
             .persistent()
-            .set(&DataKey::RoundStatus(round_id), &Symbol::new(&env, "FINALIZED"));
+            .set(&DataKey::Round(round_id), &round);
+        env.storage().persistent().set(
+            &DataKey::RoundStatus(round_id),
+            &Symbol::new(&env, "FINALIZED"),
+        );
         events::RoundFinalizedEvent { round_id, admin }.publish(&env);
         Ok(())
     }
@@ -375,17 +421,24 @@ impl MatchingPoolContract {
         }
 
         round.is_distributed = true;
-        env.storage().persistent().set(&DataKey::Round(round_id), &round);
         env.storage()
             .persistent()
-            .set(&DataKey::RoundStatus(round_id), &Symbol::new(&env, "DISTRIBUTED"));
+            .set(&DataKey::Round(round_id), &round);
+        env.storage().persistent().set(
+            &DataKey::RoundStatus(round_id),
+            &Symbol::new(&env, "DISTRIBUTED"),
+        );
         env.storage()
             .persistent()
             .set(&DataKey::MatchDistributed(round_id), &true);
         env.storage()
             .persistent()
             .set(&DataKey::RoundPool(round_id), &0i128);
-        events::AllMatchesDistributedEvent { round_id, total_distributed }.publish(&env);
+        events::AllMatchesDistributedEvent {
+            round_id,
+            total_distributed,
+        }
+        .publish(&env);
         Ok(total_distributed)
     }
 
@@ -411,7 +464,11 @@ impl MatchingPoolContract {
             let amount: i128 = env
                 .storage()
                 .persistent()
-                .get(&DataKey::ContributorAmount(round_id, project_id, contributor))
+                .get(&DataKey::ContributorAmount(
+                    round_id,
+                    project_id,
+                    contributor,
+                ))
                 .unwrap_or(0);
             if amount > 0 {
                 sum_sqrt = sum_sqrt.saturating_add(sqrt_scaled(amount));
@@ -452,10 +509,7 @@ impl MatchingPoolContract {
         Ok(Self::compute_qf_score(&env, round_id, project_id))
     }
 
-    pub fn preview_distribution(
-        env: Env,
-        round_id: u64,
-    ) -> Result<Vec<i128>, MatchingPoolError> {
+    pub fn preview_distribution(env: Env, round_id: u64) -> Result<Vec<i128>, MatchingPoolError> {
         env.storage()
             .persistent()
             .get::<_, RoundData>(&DataKey::Round(round_id))

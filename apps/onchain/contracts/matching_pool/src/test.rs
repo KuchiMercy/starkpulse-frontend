@@ -7,10 +7,7 @@ use soroban_sdk::{
     vec, Address, Env,
 };
 
-fn create_token<'a>(
-    env: &Env,
-    admin: &Address,
-) -> (TokenClient<'a>, StellarAssetClient<'a>) {
+fn create_token<'a>(env: &Env, admin: &Address) -> (TokenClient<'a>, StellarAssetClient<'a>) {
     let addr = env.register_stellar_asset_contract_v2(admin.clone());
     (
         TokenClient::new(env, &addr.address()),
