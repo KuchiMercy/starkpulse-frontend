@@ -45,7 +45,6 @@ describe('NotificationPreferenceService', () => {
           NotificationChannel.EMAIL,
         ],
         eventPreferences: {},
-        quietHours: null,
         dailyLimit: 50,
         minSeverity: 'low',
       };
