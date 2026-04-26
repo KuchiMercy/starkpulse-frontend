@@ -10,7 +10,12 @@ const SNAPSHOT_ID = 'snapshot-456';
 
 const makeAssetBalances = () => [
   { assetCode: 'XLM', assetIssuer: null, amount: '1000.0000', valueUsd: 100.0 },
-  { assetCode: 'USDC', assetIssuer: 'issuer-abc', amount: '500.0000', valueUsd: 500.0 },
+  {
+    assetCode: 'USDC',
+    assetIssuer: 'issuer-abc',
+    amount: '500.0000',
+    valueUsd: 500.0,
+  },
 ];
 
 const makeMaterializedRow = (
@@ -22,8 +27,20 @@ const makeMaterializedRow = (
     totalValueUsd: '600.00',
     assetBalances: makeAssetBalances(),
     assetAllocation: [
-      { assetCode: 'XLM', assetIssuer: null, amount: '1000.0000', valueUsd: 100.0, percentage: 16.6667 },
-      { assetCode: 'USDC', assetIssuer: 'issuer-abc', amount: '500.0000', valueUsd: 500.0, percentage: 83.3333 },
+      {
+        assetCode: 'XLM',
+        assetIssuer: null,
+        amount: '1000.0000',
+        valueUsd: 100.0,
+        percentage: 16.6667,
+      },
+      {
+        assetCode: 'USDC',
+        assetIssuer: 'issuer-abc',
+        amount: '500.0000',
+        valueUsd: 500.0,
+        percentage: 83.3333,
+      },
     ],
     hasLinkedAccount: true,
     sourceSnapshotId: SNAPSHOT_ID,
@@ -69,7 +86,9 @@ describe('MaterializedSnapshotService', () => {
     }).compile();
 
     service = module.get(MaterializedSnapshotService);
-    materializedRepo = module.get(getRepositoryToken(PortfolioMaterializedSnapshot));
+    materializedRepo = module.get(
+      getRepositoryToken(PortfolioMaterializedSnapshot),
+    );
     snapshotRepo = module.get(getRepositoryToken(PortfolioSnapshot));
   });
 
@@ -101,7 +120,9 @@ describe('MaterializedSnapshotService', () => {
     it('updates an existing materialized snapshot', async () => {
       const existing = makeMaterializedRow();
       materializedRepo.findOne.mockResolvedValue(existing);
-      materializedRepo.save.mockImplementation(async (entity) => entity as PortfolioMaterializedSnapshot);
+      materializedRepo.save.mockImplementation((entity) =>
+        Promise.resolve(entity as PortfolioMaterializedSnapshot),
+      );
 
       const result = await service.upsertForUser({
         userId: USER_ID,
@@ -125,7 +146,9 @@ describe('MaterializedSnapshotService', () => {
       const existing = makeMaterializedRow();
       const originalAllocation = existing.assetAllocation;
       materializedRepo.findOne.mockResolvedValue(existing);
-      materializedRepo.save.mockImplementation(async (entity) => entity as PortfolioMaterializedSnapshot);
+      materializedRepo.save.mockImplementation((entity) =>
+        Promise.resolve(entity as PortfolioMaterializedSnapshot),
+      );
 
       await service.upsertForUser({
         userId: USER_ID,
@@ -196,19 +219,33 @@ describe('MaterializedSnapshotService', () => {
       snapshotRepo.findOne.mockResolvedValue(snapshot);
 
       materializedRepo.findOne.mockResolvedValue(null);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       let savedData: any = null;
       materializedRepo.create.mockImplementation((data: any) => {
         savedData = data;
         return data as PortfolioMaterializedSnapshot;
       });
-      materializedRepo.save.mockImplementation(async (entity) => entity as PortfolioMaterializedSnapshot);
+      materializedRepo.save.mockImplementation((entity) =>
+        Promise.resolve(entity as PortfolioMaterializedSnapshot),
+      );
 
       await service.refreshForUser(USER_ID);
 
       expect(savedData.assetAllocation).toEqual([
-        { assetCode: 'XLM', assetIssuer: null, amount: '1000.0000', valueUsd: 100.0, percentage: expectCloseTo(16.6667, 0.01) },
-        { assetCode: 'USDC', assetIssuer: 'issuer-abc', amount: '500.0000', valueUsd: 500.0, percentage: expectCloseTo(83.3333, 0.01) },
+        {
+          assetCode: 'XLM',
+          assetIssuer: null,
+          amount: '1000.0000',
+          valueUsd: 100.0,
+          percentage: expectCloseTo(16.6667, 0.01),
+        },
+        {
+          assetCode: 'USDC',
+          assetIssuer: 'issuer-abc',
+          amount: '500.0000',
+          valueUsd: 500.0,
+          percentage: expectCloseTo(83.3333, 0.01),
+        },
       ]);
     });
   });
@@ -268,7 +305,12 @@ describe('MaterializedSnapshotService', () => {
 
     it('preserves asset fields in the output', () => {
       const balances = [
-        { assetCode: 'XLM', assetIssuer: 'issuer-123', amount: '500.00', valueUsd: 250 },
+        {
+          assetCode: 'XLM',
+          assetIssuer: 'issuer-123',
+          amount: '500.00',
+          valueUsd: 250,
+        },
       ];
 
       const result = service.computeAllocation(balances);
@@ -285,11 +327,8 @@ describe('MaterializedSnapshotService', () => {
 /**
  * Custom Jest matcher helper for close-to percentage checks.
  */
-function expectCloseTo(expected: number, tolerance: number) {
-  return expectCloseTo.create(expected, tolerance);
-}
-namespace expectCloseTo {
-  export function create(expected: number, tolerance: number) {
+const expectCloseTo = {
+  create(expected: number, tolerance: number) {
     return {
       $$typeof: Symbol.for('jest.asymmetricMatcher'),
       asymmetricMatch(received: number) {
@@ -299,5 +338,5 @@ namespace expectCloseTo {
         return `expectCloseTo(${expected}, ±${tolerance})`;
       },
     };
-  }
-}
+  },
+};

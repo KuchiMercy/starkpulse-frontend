@@ -147,10 +147,9 @@ export class PortfolioService {
       });
     } catch (error: unknown) {
       // Log but don't fail the snapshot creation if materialization fails
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
-        `Failed to update materialized snapshot for user ${userId}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to update materialized snapshot for user ${userId}: ${message}`,
       );
     }
 
@@ -250,10 +249,9 @@ export class PortfolioService {
 
     // Populate materialized snapshot for future fast reads
     try {
-      const allocation =
-        this.materializedSnapshotService.computeAllocation(
-          latestSnapshot.assetBalances,
-        );
+      const allocation = this.materializedSnapshotService.computeAllocation(
+        latestSnapshot.assetBalances,
+      );
       await this.materializedSnapshotService.upsertForUser({
         userId,
         totalValueUsd: latestSnapshot.totalValueUsd,
@@ -263,10 +261,9 @@ export class PortfolioService {
         sourceSnapshotId: latestSnapshot.id,
       });
     } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
-        `Failed to backfill materialized snapshot for user ${userId}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to backfill materialized snapshot for user ${userId}: ${message}`,
       );
     }
 
@@ -385,11 +382,8 @@ export class PortfolioService {
         `Snapshot batch queued (cron). BatchId=${progress.batchId}`,
       );
     } catch (error: unknown) {
-      this.logger.error(
-        `Failed to queue snapshot batch job: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      );
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to queue snapshot batch job: ${message}`);
     }
   }
 
@@ -405,7 +399,7 @@ export class PortfolioService {
     try {
       // Refresh materialized snapshots for users that have snapshots
       // but no materialized row (migration gap or upsert failure)
-      const staleUsers = await this.snapshotRepository
+      const staleUsers: { userId: string }[] = await this.snapshotRepository
         .createQueryBuilder('ps')
         .select('ps.userId', 'userId')
         .groupBy('ps.userId')
@@ -421,10 +415,10 @@ export class PortfolioService {
             await this.materializedSnapshotService.refreshForUser(userId);
           if (didRefresh) refreshed++;
         } catch (error: unknown) {
+          const message =
+            error instanceof Error ? error.message : 'Unknown error';
           this.logger.warn(
-            `Failed to refresh materialized snapshot for user ${userId}: ${
-              error instanceof Error ? error.message : 'Unknown error'
-           }`,
+            `Failed to refresh materialized snapshot for user ${userId}: ${message}`,
           );
         }
       }
@@ -433,11 +427,8 @@ export class PortfolioService {
         `Materialized snapshot refresh complete. Refreshed ${refreshed} users.`,
       );
     } catch (error: unknown) {
-      this.logger.error(
-        `Materialized snapshot refresh failed: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      );
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Materialized snapshot refresh failed: ${message}`);
     }
   }
 
@@ -552,7 +543,9 @@ export class PortfolioService {
         .getAccountBalances(account.publicKey)
         .catch((error) => {
           this.logger.warn(
-            `Failed to fetch balances for account ${account.publicKey}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            `Failed to fetch balances for account ${account.publicKey}: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`,
           );
           return []; // Return empty array on failure to not break Promise.all
         }),
